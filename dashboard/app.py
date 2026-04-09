@@ -10,24 +10,31 @@ sys.path.append(os.getcwd())
 
 from modules.pipeline import run_pipeline
 
-st.set_page_config(page_title="Supply Chain Intelligence", layout="wide")
+st.set_page_config(page_title="Supply Chain Intelligence", layout="wide",page_icon="📊")
 
 # Hide Streamlit Style Elements (Deploy Button, etc)
-st.markdown("""
-    <style>
-    /* Hide Deploy Button */
-    .stDeployButton, [data-testid="stDeployButton"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# st.markdown("""
+#     <style>
+#     /* Hide Deploy Button */
+#     .stDeployButton, [data-testid="stDeployButton"] {
+#         display: none !important;
+#         visibility: hidden !important;
+#     }
+#     </style>
+# """, unsafe_allow_html=True)
 
+st.title("Supply Chain Intelligence")
+st.caption("Predict • Detect • Decide")
 # --- Sidebar ---
 st.sidebar.title("Configuration")
 
 # Data Source
-data_path = st.sidebar.text_input("Dataset Path", "data/raw_sales_500_electronics.csv")
+# data_path = st.sidebar.text_input("Dataset Path", "data/raw_sales_500_electronics.csv")
+st.subheader("Dataset Source")
+
+uploaded_file = st.file_uploader("Upload CSV Dataset", type=["csv"])
+
+use_default = st.checkbox("Use Default Dataset", value=True)
 
 # Parameters
 st.sidebar.subheader("Decline Detection Params")
@@ -168,7 +175,7 @@ with tab2:
             st.info(recommendation)
 
             # 🔥 Insight Summary
-            st.subheader("Insight Summary")
+            st.markdown("### 🧠 Insight Summary")
 
             summary = f"""
             Product **{selected_prod}** is currently {'declining' if is_declined else 'stable'}.
@@ -190,12 +197,20 @@ with tab2:
 
             price_change = (new_price - curr['price']) / curr['price']
 
-            estimated_sales = curr['sales'] * (1 - 0.5 * price_change)
+            elasticity = 0.7  # 🔥 better than fixed 0.5
+
+            estimated_sales = curr['sales'] * (1 - elasticity * price_change)
+
+            # 🔥 NEW: growth impact
+            simulated_growth = (estimated_sales - curr['sales']) / curr['sales']
 
             st.metric("Estimated Sales Impact", f"{estimated_sales:.2f}")
 
+            # 🔥 ADD THIS (IMPORTANT)
+            st.metric("Sales Change %", f"{simulated_growth * 100:.2f}%")
+
             # 🔥 Risk Level
-            st.subheader("Risk Level")
+            st.markdown("### 🚨 Risk Assessment")
 
             risk_score = (
                     (1 if is_declined else 0) +
@@ -203,12 +218,21 @@ with tab2:
                     (1 if kpi_row['sales_volatility'] > kpi_row['avg_sales'] else 0)
             )
 
+            #  (simulation impact)
+            if simulated_growth < -0.1:
+                risk_score += 1
+            elif simulated_growth > 0.1:
+                risk_score -= 1
+
             if risk_score >= 2:
                 st.error("High Risk")
             elif risk_score == 1:
                 st.warning("Moderate Risk")
             else:
                 st.success("Low Risk")
+
+            st.session_state["last_risk"] = risk_score
+
 
             # 🔥 Decline Details
             if is_declined:
@@ -227,15 +251,22 @@ with tab2:
 
             st.session_state["last_product"] = selected_prod
             st.session_state["last_decline"] = is_declined
-            st.session_state["last_risk"] = risk_score
+            # st.session_state["last_risk"] = risk_score
             st.session_state["last_recommendation"] = recommendation
 
-            # 🔥 Current KPIs
-            st.write("**Current KPIs:**")
+            #  Current KPIs
+            st.write("### 📊 Current KPIs")
 
-            st.metric("Latest Price", f"${curr['price']:.2f}", delta=f"{curr['price_pct_change'] * 100:.1f}%")
-            st.metric("Latest Rating", f"{curr['rating']:.2f}", delta=f"{curr['rating_pct_change'] * 100:.1f}%")
-            st.metric("Inventory", f"{curr.get('inventory_level', 'N/A')}")
+            k1, k2, k3 = st.columns(3)
+
+            with k1:
+                st.metric("Price", f"${curr['price']:.2f}")
+
+            with k2:
+                st.metric("Rating", f"{curr['rating']:.2f}")
+
+            with k3:
+                st.metric("Inventory", f"{curr.get('inventory_level', 'N/A')}")
 
 # --- Tab 3: Comparison ---
 with tab3:
@@ -320,7 +351,12 @@ with tab5:
             title=f"Forecast: {selected_prod}",
             template="plotly_white"
         )
-
+        fig.update_layout(
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            title_font=dict(size=18),
+            font=dict(size=12)
+        )
         # 🔥 Confidence band (PROPER WAY)
         fig.add_traces([
             dict(

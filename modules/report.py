@@ -79,12 +79,15 @@ def generate_context_report(context, df, kpis_df):
     content = []
 
     # Title
-    content.append(Paragraph("Supply Chain Intelligence Report", styles['Title']))
+    content.append(Paragraph("Supply Chain Intelligence and Sales decline analysis Report", styles['Title']))
     content.append(Spacer(1, 12))
 
     # Summary
     summary = generate_summary(context)
-    content.append(Paragraph("Executive Summary", styles['Heading2']))
+    content.append(Paragraph(
+        "<font size=12 color='black'><b>Executive Summary</b></font>",
+        styles['Normal']
+    ))
     content.append(Paragraph(summary, styles['Normal']))
     content.append(Spacer(1, 12))
 
@@ -100,7 +103,10 @@ def generate_context_report(context, df, kpis_df):
 
         kpi = kpis_df[kpis_df['product_id'] == prod].iloc[0]
 
-        content.append(Paragraph(f"Avg Sales: {kpi['avg_sales']:.2f}", styles['Normal']))
+        content.append(Paragraph(
+            f"<b>Average Sales:</b> {kpi['avg_sales']:.2f}",
+            styles['Normal']
+        ))
         content.append(Paragraph(f"Volatility: {kpi['sales_volatility']:.2f}", styles['Normal']))
         content.append(Spacer(1, 10))
 
