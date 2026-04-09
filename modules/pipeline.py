@@ -1,4 +1,4 @@
-def run_pipeline(path, thresh, sustain):
+def run_pipeline(input_data, thresh, sustain):
     from modules.data_collection import load_dataset
     from modules.data_cleaning import clean_dataset
     from modules.features import compute_features, aggregate_product_kpis
@@ -8,7 +8,10 @@ def run_pipeline(path, thresh, sustain):
     from modules.anomaly import detect_anomalies
 
     # 1. Load
-    raw_df = load_dataset(path)
+    if isinstance(input_data, str):
+        raw_df = load_dataset(input_data)
+    else:
+        raw_df = input_data.copy()
 
     # 2. Validate
     raw_df = validate_schema(raw_df)

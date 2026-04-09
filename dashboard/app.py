@@ -46,26 +46,38 @@ if st.sidebar.button("Reload Data"):
     st.cache_data.clear()
 
 # --- Data Loading (Cached) ---
+# --- Data Loading (Cached) ---
 from modules.pipeline import run_pipeline
+
+@st.cache_data
+def load_pipeline_data(data, thresh, sustain):
+    return run_pipeline(data, thresh, sustain)
+
+
 try:
-    @st.cache_data
-    def load_pipeline_data(path, thresh, sustain):
-        return run_pipeline(path, thresh, sustain)
+    if uploaded_file is not None:
+        df_input = pd.read_csv(uploaded_file)
+        st.success("Custom dataset loaded")
 
+    else:
+        df_input = data_path  # default path
 
-    results = load_pipeline_data(data_path, threshold_pct, sustain_months)
+    results = load_pipeline_data(df_input, threshold_pct, sustain_months)
 
     df = results["data"]
     declines_df = results["declines"]
     causes_df = results["causes"]
     kpis_df = results["kpis"]
-    # forecast_df = results["forecast"]
 
-    # df, declines_df, causes_df, kpis_df = load_and_process_data(data_path, threshold_pct, sustain_months)
-    
 except Exception as e:
     st.error(f"Error loading data: {e}")
     st.stop()
+
+uploaded_file = st.file_uploader(
+    "Upload CSV Dataset",
+    type=["csv"],
+    key="dataset_uploader"
+)
 
 # --- Main Tabs ---
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Overview", "Product Detail", "Comparison", "Diagnostics","Forecast","Report"])
